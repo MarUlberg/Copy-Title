@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Copy Page Title",
-  "version": "1.4",
+  "version": "1.5",
   "description": "One-click copy of the page title.",
   "permissions": ["activeTab", "scripting", "clipboardWrite"],
   "host_permissions": ["<all_urls>"],
