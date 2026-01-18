@@ -8,6 +8,7 @@ const siteHandlers = {
     "mobygames.com": processMobygamesTitle,
     "theporndb.net": processAdultdbTitle,
     "proff.no": processProffTitle,
+    "pornhub.com": processPHTitle,
     "soliditet.no": processSoliditetTitle,
     "open.spotify.com": processSpotifyTitle,
     "twitch.tv": processTwitchTitle,
@@ -169,6 +170,38 @@ function processProffTitle(title) {
     return formattedTitle;
   }
   return title;
+}
+
+// Processes title for Pornhub.com
+function processPHTitle(title) {
+    console.log("🎭 Processing title for PornHub");
+    
+    // Remove " - Pornhub.com" from the end
+    let cleanedTitle = title.replace(/\s*-\s*Pornhub\.com$/i, "").trim();
+    
+	// Checks if ALL LETTERS are uppercase (ignoring numbers, symbols, whitespace)
+	const isAllCaps = (str) => !/[a-z]/.test(str);
+
+	// Apply properTitleCase only if letters are ALL CAPS
+	if (isAllCaps(cleanedTitle)) {
+		cleanedTitle = properTitleCase(cleanedTitle);
+	}
+    
+    // Check for episode pattern
+    const episodeMatch = cleanedTitle.match(/(.*?)\s*-\s*(.*?)\s*\((EPISODE\s*(\d+))\)/i);
+    
+    if (episodeMatch) {
+        const titlePart = episodeMatch[1].trim();
+        const seriesPart = episodeMatch[2].trim();
+        const episodeNum = episodeMatch[4].trim();
+        
+        // Format as: {Series} S01E{Episode} - {Title}
+        // Example: Luna's Journey - S01E54 - Sun and Wine
+        return `${seriesPart} - S01E${episodeNum} - ${titlePart}`;
+    }
+    
+    // If no episode found, return the cleaned title
+    return cleanedTitle;
 }
 
 // Processes title for Reddit
