@@ -5,6 +5,7 @@ const siteHandlers = {
     "amazon.": processAmazonTitle,
     "mail.google.com": processGmailTitle,
     "instagram.com": processInstagramTitle,
+    "iptorrents.com": processTorrentsTitle,
     "mobygames.com": processMobygamesTitle,
     "theporndb.net": processAdultdbTitle,
     "proff.no": processProffTitle,
@@ -83,6 +84,148 @@ function processInstagramTitle(title) {
 
     console.warn("⚠ Instagram username not found!");
     return "Instagram"; // Fallback if username cannot be found
+}
+
+// Processes title for Torrent sites
+function processTorrentsTitle(rawTitle) {
+
+  if (!looksLikeVideo(rawTitle))
+    return processGenericTitle(rawTitle);
+
+  let title = rawTitle;
+
+  // ===============================
+  // 1. Normalize
+  // ===============================
+  title = title
+    .replace(/\./g, " ")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Remove IPTorrents junk
+  title = title.replace(/\s*-\s*Iptorrents.*$/i, "").trim();
+
+  // Remove leading [group]
+  title = title.replace(/^\[[^\]]+\]\s*/, "");
+
+  // ===============================
+  // 2. Hard cut at XXX
+  // ===============================
+  if (/\bXXX\b/i.test(title)) {
+    title = title.split(/\bXXX\b/i)[0].trim();
+  }
+
+  // ===============================
+  // 3. Fully bracketed anime
+  // ===============================
+  if (/^(\[[^\]]+\]){2,}/.test(rawTitle)) {
+
+    let brackets = [...rawTitle.matchAll(/\[([^\]]+)\]/g)]
+      .map(x => x[1]);
+
+    let show = brackets.find(b =>
+      b.length > 5 &&
+      !looksLikeVideo(b) &&
+      !/raw|dual|sub|aac|hevc|x26|bit|audio/i.test(b)
+    );
+
+    let ep = brackets.find(b => /^\d+$/.test(b));
+
+    if (show && ep)
+      return fixTitleCase(`${properTitleCase(show)} E${ep.padStart(2,"0")}`);
+  }
+
+  // Remove release group like -Mami
+  title = title.replace(/-[A-Za-z0-9]+$/, "").trim();
+
+  // ===============================
+  // NEW: Cut title at first video identifier
+  // ===============================
+  title = cutAtFirstVideoTag(title);
+
+  // Remove trailing brackets like [V2][English]
+  title = title.replace(/(\s*\[[^\]]+\])+$/, "").trim();
+
+  // ===============================
+  // 4. TV Episode
+  // ===============================
+  let tvEp = title.match(/(.+?)\s*(S\d{2}[EDP]?\d{2,3})\s*(.*)/i);
+  if (tvEp) {
+    let show = properTitleCase(tvEp[1].trim());
+    let ep = tvEp[2].toUpperCase().replace(/[DP]/, "E");
+    let name = properTitleCase(tvEp[3].trim());
+    return fixTitleCase(`${show} ${ep}${name ? " " + name : ""}`);
+  }
+
+  // ===============================
+  // 5. Anime numeric episode
+  // ===============================
+  let animeEp = title.match(/(.+?)\s*-\s*(\d{2,4})$/);
+  if (animeEp) {
+    return fixTitleCase(`${properTitleCase(animeEp[1].trim())} E${animeEp[2]}`);
+  }
+
+  // ===============================
+  // 6. TV Season
+  // ===============================
+  let tvSeason =
+      title.match(/(.+?)\s*S(\d{2})\b/i) ||
+      title.match(/(.+?)\s*Season\s*(\d+)/i);
+
+  if (tvSeason && !/[EDP]\d{2}/i.test(title)) {
+    let show = properTitleCase(tvSeason[1].trim());
+    let season = parseInt(tvSeason[2]);
+    return fixTitleCase(`${show} Season ${season}`);
+  }
+
+  // ===============================
+  // 7. Porn
+  // ===============================
+  let porn = title.match(/^([A-Za-z0-9]+)\s+(\d{2,4})[- ](\d{2})[- ](\d{2})\s+(.*)/);
+
+  if (porn) {
+    let studio = properTitleCase(splitStudio(porn[1]));
+    let year = porn[2].length === 2 ? "20" + porn[2] : porn[2];
+    let month = porn[3];
+    let day = porn[4];
+    let rest = properTitleCase(porn[5].trim());
+    return `${studio} ${year}-${month}-${day} ${rest}`;
+  }
+
+  // ===============================
+  // 8. Movie
+  // ===============================
+  let movie = title.match(/(.+?)\s*\(?((19|20)\d{2})\)?/);
+  if (movie) {
+    let name = properTitleCase(movie[1].trim());
+    return `${name} (${movie[2]})`;
+  }
+
+  return processGenericTitle(rawTitle);
+
+
+  // ===================================================
+  function cutAtFirstVideoTag(t) {
+    let words = t.split(" ");
+
+    for (let i = 0; i < words.length; i++) {
+      if (videoIdentifiers.some(v =>
+        new RegExp(`^${v}$`, "i").test(words[i])
+      )) {
+        return words.slice(0, i).join(" ").trim();
+      }
+    }
+    return t.trim();
+  }
+
+  function splitStudio(name) {
+    return name.replace(/([a-z])([A-Z])/g, "$1 $2");
+  }
+
+  function fixTitleCase(text) {
+    return text.replace(/\bthe Anime\b/i, "The Anime");
+  }
 }
 
 // Processes title for MobyGames
@@ -444,6 +587,26 @@ function fetchCompanyName(orgNumber, callback) {
         console.error("❌ Not found.");
         callback(null);
     }, 1000);
+}
+
+// Video file identifiers
+const videoIdentifiers = [
+  // Resolution / Quality
+  "2160p","1440p","1080p","1080i","720p","576p","480p","360p",
+  "4K","8K","HDR","SDR","DV","DoVi","DolbyVision",
+  "BluRay","BRRip","BDRip","BDREMUX","REMUX", "AMZN",
+  "WEB-DL","WEBRip","HDTV","DVDRip","CAM","TS","TC","SCR","R5",
+
+  // Codecs / Formats
+  "x264","x265","H 264","H 265","HEVC","AVC","XviD","DivX","AV1",
+  "MP4","MKV","AVI","AAC","AC3","DTS","TrueHD","Atmos","FLAC","DDP",
+	"5 1", "7 1",
+];
+
+function looksLikeVideo(title) {
+  return videoIdentifiers.some(id =>
+    new RegExp(`\\b${id}\\b`, "i").test(title)
+  );
 }
 
 // Utility function to fix company suffixes without altering the main company name
