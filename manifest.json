@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Copy Page Title",
-  "version": "2.0",
+  "version": "2.1",
   "description": "One-click copy of the page title.",
   "icons": {
     "16": "icon.png",
