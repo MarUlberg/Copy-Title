@@ -1,3 +1,20 @@
+/**
+ * Copy Page Title — Chrome
+ *
+ * Background script for the Chrome version of the Copy Page Title
+ * browser extension.
+ *
+ * This script manages the extension's background functionality, including
+ * context menus, keyboard shortcuts, toolbar interactions, tab changes,
+ * and communication with the content script. It coordinates user
+ * actions from the browser interface and passes the appropriate copy
+ * requests to content.js for page-level processing.
+ *
+ * This file contains the Chrome-specific background implementation of
+ * the extension. The content.js file is shared unchanged between the
+ * Chrome and Firefox versions.
+ */
+
 // ============================================================
 // CONTEXT MENU
 // ============================================================
