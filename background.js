@@ -298,25 +298,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // ============================================================
 
 function runCopyCommand(tabId, action) {
-    chrome.scripting.executeScript(
-        {
-            target: { tabId },
-            files: ["content.js"]
-        },
-        () => {
-            if (chrome.runtime.lastError) {
-                console.error(
-                    "❌ Failed to load content.js:",
-                    chrome.runtime.lastError.message
-                );
-                return;
-            }
-
-            chrome.tabs.sendMessage(tabId, {
-                action: action
-            });
-        }
-    );
+    chrome.tabs.sendMessage(tabId, {
+        action: action
+    });
 }
 
 
