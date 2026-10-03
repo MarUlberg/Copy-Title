@@ -21,12 +21,112 @@
 
 const MENU_IDS = {
     TITLE: "copy-title",
-    TITLE_URL: "copy-title-url",
     URL: "copy-url",
+    RAW: "copy-raw",
+    TITLE_URL: "copy-title-url",
     MARKDOWN: "copy-markdown",
-    RAW: "copy-raw"
+    BBCODE: "copy-bbcode",
+    HTML: "copy-html"
 };
 
+const customSite = {
+    "amazon.": {
+        title: "Copy Product Title       (Click Extension Icon)"
+    },
+
+    "mail.google.com": {
+        title: "Copy Email Address       (Click Extension Icon)"
+    },
+
+    "instagram.com": {
+        title: "Copy Instagram Username  (Click Extension Icon)"
+    },
+
+    "iptorrents.com": {
+        title: "Copy Video Title         (Click Extension Icon)"
+    },
+
+    "mobygames.com": {
+        title: "Copy Game Title          (Click Extension Icon)"
+    },
+
+    "theporndb.net": {
+        title: "Copy Plex Filename       (Click Extension Icon)",
+        url: "Copy Plex + Performer    (Shift+Ctrl+F)"
+    },
+
+    "proff.no": {
+        title: "Copy Company + Orgnr.   (Click Extension Icon)"
+    },
+
+    "pornhub.com": {
+        title: "Copy PornHub Title       (Click Extension Icon)"
+    },
+
+    "soliditet.no": {
+        title: "Copy Company + Orgnr.   (Click Extension Icon)",
+        url: "Copy Full Company Info   (Shift+Ctrl+F)"
+    },
+
+    "open.spotify.com": {
+        title: "Copy Spotify Title       (Click Extension Icon)"
+    },
+
+    "twitch.tv": {
+        title: "Copy Streamer Name   (Click Extension Icon)"
+    },
+
+    "x.com": {
+        title: "Copy X Username          (Click Extension Icon)"
+    },
+
+    "reddit.com": {
+        title: "Copy Reddit Title        (Click Extension Icon)"
+    },
+
+    "retroachievements.org/user/": {
+        title: "Copy User Achievement Points (Click Extension Icon)",
+        url: "Copy User + Last Played   (Shift+Ctrl+F)"
+    },
+
+    "retroachievements.org/game/": {
+        title: "Copy Game Title        (Click Extension Icon)",
+        url: "Copy Achievement List   (Shift+Ctrl+F)"
+    },
+
+    "youtube.com": {
+        title: "Copy YouTube Video Title  (Click Extension Icon)"
+    }
+};
+
+function getSiteMenuConfig(url) {
+    if (!url) {
+        return null;
+    }
+
+    try {
+        const parsedUrl = new URL(url);
+        const hostname = parsedUrl.hostname.toLowerCase();
+        const fullUrl = `${hostname}${parsedUrl.pathname}`.toLowerCase();
+
+        return (
+            Object.entries(customSite).find(
+                ([site]) => {
+                    if (site.includes("/")) {
+                        return fullUrl.startsWith(site);
+                    }
+
+                    return (
+                        hostname === site ||
+                        hostname.endsWith(`.${site}`)
+                    );
+                }
+            )?.[1] || null
+        );
+    } catch (error) {
+        return null;
+    }
+}
 
 // ============================================================
 // CHECK URL
@@ -71,18 +171,19 @@ function isPornDbUrl(url) {
 // ============================================================
 
 function updateContextMenuForTab(tab) {
-    let titleText;
-    let titleUrlText;
+    let titleText = "Copy Title          (Click Extension Icon)";
+    let urlText = "Copy URL             (Shift+Ctrl+F)";
 
-    if (isPornDbUrl(tab?.url)) {
-        titleText = "Copy Plex Filename  (Click Extension Icon)";
-        titleUrlText = "Copy Plex + Performer  (Shift+Ctrl+F)";
-    } else {
-        titleText = "Copy Title          (Click Extension Icon)";
+    const siteLabels = getSiteMenuConfig(tab?.url);
 
-        titleUrlText = isSoliditetUrl(tab?.url)
-            ? "Copy Company Info      (Shift+Ctrl+F)"
-            : "Copy Title + URL      (Shift+Ctrl+F)";
+    if (siteLabels) {
+        if (siteLabels.title) {
+            titleText = siteLabels.title;
+        }
+
+        if (siteLabels.url) {
+            urlText = siteLabels.url;
+        }
     }
 
     chrome.contextMenus.update(
@@ -96,8 +197,8 @@ function updateContextMenuForTab(tab) {
     );
 
     chrome.contextMenus.update(
-        MENU_IDS.TITLE_URL,
-        { title: titleUrlText },
+        MENU_IDS.URL,
+        { title: urlText },
         () => {
             if (chrome.runtime.lastError) {
                 return;
@@ -106,44 +207,63 @@ function updateContextMenuForTab(tab) {
     );
 }
 
-
 // ============================================================
 // CREATE CONTEXT MENUS
 // ============================================================
 
-chrome.runtime.onInstalled.addListener(() => {
+function createContextMenus() {
     chrome.contextMenus.removeAll(() => {
 
         chrome.contextMenus.create({
             id: MENU_IDS.TITLE,
-            title: "Copy Title          (Click Extension Icon)",
-            contexts: ["page"]
-        });
-
-        chrome.contextMenus.create({
-            id: MENU_IDS.TITLE_URL,
-            title: "Copy Title + URL      (Shift+Ctrl+F)",
+            title: "Copy Title (Click Extension Icon)",
             contexts: ["page"]
         });
 
         chrome.contextMenus.create({
             id: MENU_IDS.URL,
-            title: "Copy URL",
-            contexts: ["page"]
-        });
-
-        chrome.contextMenus.create({
-            id: MENU_IDS.MARKDOWN,
-            title: "Copy Markdown",
+            title: "Copy URL (Shift+Ctrl+F)",
             contexts: ["page"]
         });
 
         chrome.contextMenus.create({
             id: MENU_IDS.RAW,
-            title: "Copy RAW Title",
+            title: "Copy Raw Title",
+            contexts: ["page"]
+        });
+
+        chrome.contextMenus.create({
+            id: MENU_IDS.TITLE_URL,
+            title: "Copy Title + URL",
+            contexts: ["page"]
+        });
+
+        chrome.contextMenus.create({
+            id: MENU_IDS.MARKDOWN,
+            title: "-- Markdown Link",
+            contexts: ["page"]
+        });
+
+        chrome.contextMenus.create({
+            id: MENU_IDS.BBCODE,
+            title: "-- BBCode Link",
+            contexts: ["page"]
+        });
+
+        chrome.contextMenus.create({
+            id: MENU_IDS.HTML,
+            title: "-- HTML Link",
             contexts: ["page"]
         });
     });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+    createContextMenus();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+    createContextMenus();
 });
 
 
@@ -220,18 +340,24 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
             action = "copyUrl";
             break;
 
+        case MENU_IDS.RAW:
+            action = "copyRawTitle";
+            break;
+
         case MENU_IDS.TITLE_URL:
-            action = isSoliditetUrl(tab.url)
-                ? "copySoliditetFull"
-                : "copyTitleWithUrl";
+            action = "copyTitleWithUrl";
             break;
 
         case MENU_IDS.MARKDOWN:
             action = "copyMarkdown";
             break;
 
-        case MENU_IDS.RAW:
-            action = "copyRawTitle";
+        case MENU_IDS.BBCODE:
+            action = "copyBBCode";
+            break;
+
+        case MENU_IDS.HTML:
+            action = "copyHTML";
             break;
 
         default:
@@ -240,7 +366,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
     runCopyCommand(tab.id, action);
 });
-
 
 // ============================================================
 // KEYBOARD SHORTCUTS
@@ -262,18 +387,24 @@ chrome.commands.onCommand.addListener((command, tab) => {
             action = "copyUrl";
             break;
 
+        case "copy-raw":
+            action = "copyRawTitle";
+            break;
+
         case "copy-title-url":
-            action = isSoliditetUrl(tab.url)
-                ? "copySoliditetFull"
-                : "copyTitleWithUrl";
+            action = "copyTitleWithUrl";
             break;
 
         case "copy-markdown":
             action = "copyMarkdown";
             break;
 
-        case "copy-raw":
-            action = "copyRawTitle";
+        case "copy-bbcode":
+            action = "copyBBCode";
+            break;
+
+        case "copy-html":
+            action = "copyHTML";
             break;
 
         default:
@@ -293,34 +424,7 @@ chrome.action.onClicked.addListener((tab) => {
         return;
     }
 
-    chrome.scripting.executeScript(
-        {
-            target: { tabId: tab.id },
-            files: ["content.js"]
-        },
-        () => {
-            if (chrome.runtime.lastError) {
-                console.error(
-                    "❌ Failed to load content.js:",
-                    chrome.runtime.lastError.message
-                );
-                return;
-            }
-
-            chrome.scripting.executeScript({
-                target: { tabId: tab.id },
-                function: () => {
-                    if (typeof processPageTitle === "function") {
-                        processPageTitle();
-                    } else {
-                        console.error(
-                            "❌ processPageTitle is not defined in content.js"
-                        );
-                    }
-                }
-            });
-        }
-    );
+    runCopyCommand(tab.id, "copyTitle");
 });
 
 

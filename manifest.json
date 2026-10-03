@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Copy Page Title",
-    "version": "2.5",
+    "version": "2.6",
     "description": "One-click copy of the page title.",
 
     "icons": {
@@ -30,27 +30,39 @@
         }
     },
 
-    "commands": {
-        "copy-title": {
-            "description": "Copy Title"
-        },
-        "copy-url": {
-            "description": "Copy URL"
-        },
-        "copy-title-url": {
-            "suggested_key": {
-                "default": "Ctrl+Shift+F",
-                "mac": "MacCtrl+Shift+F"
-            },
-            "description": "Copy Title + URL"
-        },
-        "copy-markdown": {
-            "description": "Copy Markdown"
-        },
-        "copy-raw": {
-            "description": "Copy RAW"
-        }
-    },
+	"commands": {
+		"copy-title": {
+			"description": "Copy Title"
+		},
+
+		"copy-url": {
+			"suggested_key": {
+				"default": "Ctrl+Shift+F",
+				"mac": "MacCtrl+Shift+F"
+			},
+			"description": "Copy URL"
+		},
+
+		"copy-raw": {
+			"description": "Copy Raw Title"
+		},
+
+		"copy-title-url": {
+			"description": "Copy Title + URL"
+		},
+
+		"copy-markdown": {
+			"description": "Markdown Link"
+		},
+
+		"copy-bbcode": {
+			"description": "BBCode Link"
+		},
+
+		"copy-html": {
+			"description": "HTML Link"
+		}
+	},
 
     "background": {
         "service_worker": "background.js"
